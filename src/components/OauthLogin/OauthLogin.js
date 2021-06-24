@@ -23,48 +23,98 @@ import "react-toastify/dist/ReactToastify.css";
 class FormPage extends Component {
   constructor(props) {
     super(props);
+    this.handleModal = this.handleModal.bind(this);
   }
 
   state = {
     headers: {
       authorization: `Token ${localStorage.getItem("token")}`,
     },
+    isLoggedIn: true,
     username: "",
     password: "",
     client_id: "",
     show: false,
+    response: "",
   };
 
-  handleClose = (e) => {
-    console.log("handle close", e);
-    if (e != undefined) {
-      e.preventDefault();
-    }
-
-    const authentication_url = `http://127.0.0.1:8000/oauth/authenticate/token/${this.state.client_id}/`;
-    axios
-      .get(authentication_url, this.state)
-      .then((response) => {
-        //   const url = response.data.redirect_url+"?access_token="+response.data.access_token
-        const url =
-          response.data.redirect_url +
-          "oauth/authenticate/" +
-          response.data.access_token;
-        console.log(url);
-        window.location.href = url;
-      })
-      .catch((err) => {
-        console.log("error");
-        toast.error("⚠️ Something went wrong!", {
-          position: "bottom-right",
-          autoClose: 1500,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
+  handleModal(e) {
+    console.log(e);
+    console.log("this is response from modal");
+    if (this.state.isLoggedIn) {
+      const authentication_url = `http://127.0.0.1:8000/oauth/authenticate/token/${this.state.client_id}/`;
+      axios
+        .get(authentication_url, this.state)
+        .then((response) => {
+          //   const url = response.data.redirect_url+"?access_token="+response.data.access_token
+          const url =
+            response.data.redirect_url +
+            "oauth/authenticate/" +
+            response.data.access_token;
+          console.log(url);
+          window.location.href = url;
+        })
+        .catch((err) => {
+          console.log("error", err);
+          toast.error("⚠️ Something went wrong!", {
+            position: "bottom-right",
+            autoClose: 1500,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
         });
-      });
+    } else {
+      const response = this.state.response;
+      const url =
+        response.data.redirect_url +
+        "oauth/authenticate/" +
+        response.data.access_token;
+      console.log(url);
+      window.location.href = url;
+    }
+  }
+  // handleClose = (e) => {
+  //   console.log("handle close", e);
+  //   if (e != undefined) {
+  //     e.preventDefault();
+  //   }
+
+  //   const authentication_url = `http://127.0.0.1:8000/oauth/authenticate/token/${this.state.client_id}/`;
+  //   axios
+  //     .get(authentication_url, this.state)
+  //     .then((response) => {
+  //       //   const url = response.data.redirect_url+"?access_token="+response.data.access_token
+  //       const url =
+  //         response.data.redirect_url +
+  //         "oauth/authenticate/" +
+  //         response.data.access_token;
+  //       console.log(url);
+  //       window.location.href = url;
+  //     })
+  //     .catch((err) => {
+  //       console.log("error",err);
+  //       toast.error("⚠️ Something went wrong!", {
+  //         position: "bottom-right",
+  //         autoClose: 1500,
+  //         hideProgressBar: false,
+  //         closeOnClick: true,
+  //         pauseOnHover: true,
+  //         draggable: true,
+  //         progress: undefined,
+  //       });
+  //     });
+  // };
+  handleUser = (response) => {
+    console.log("handling user", response);
+    const url =
+      response.data.redirect_url +
+      "oauth/authenticate/" +
+      response.data.access_token;
+    console.log(url);
+    window.location.href = url;
   };
   handleShow = () => {
     this.setState({ show: true });
@@ -76,14 +126,42 @@ class FormPage extends Component {
     console.log(this.state);
     axios
       .post(authentication_url, this.state)
-      .then((response) => {
-        const url =
-          response.data.redirect_url +
-          "oauth/authenticate/" +
-          response.data.access_token;
-        console.log(url);
-        window.location.href = url;
-        
+      .then((response1) => {
+        if (response1.status == 200) {
+          localStorage.setItem("username", response1.data.username);
+          const data = {
+            username: response1.data.username,
+          };
+          axios
+            .post("http://127.0.0.1:8001/user/check/", data)
+            .then((response2) => {
+              if (response2.status == 200 && response2.data.is_user) {
+                console.log(
+                  "user of pustaka as well as the user of pustaka intake",
+                  response1
+                );
+                this.handleUser(response1);
+              } else {
+                this.setState({
+                  show: true,
+                });
+                this.setState({
+                  isLoggedIn: false,
+                });
+                this.setState({
+                  response: response1,
+                });
+
+                console.log(
+                  "user of pustaka but not the user of pustaka intake",
+                  response1
+                );
+              }
+            })
+            .catch((error) => {
+              console.log("error", error);
+            });
+        }
       })
       .catch((err) => {
         console.log("error", err);
@@ -128,12 +206,12 @@ class FormPage extends Component {
         .get("http://127.0.0.1:8000/user/validate/", {
           headers: { authorization: `Token ${localStorage.getItem("token")}` },
         })
-        .then((response) => {
-          if (response.status == 200) {
-            console.log(response);
-            console.log(response.data.username);
+        .then((response1) => {
+          if (response1.status == 200) {
+            console.log(response1);
+            console.log(response1.data.username);
             const data = {
-              username: response.data.username,
+              username: response1.data.username,
             };
             axios
               .post("http://127.0.0.1:8001/user/check/", data)
@@ -142,10 +220,14 @@ class FormPage extends Component {
                   console.log(
                     "user of pustaka as well as the user of pustaka intake"
                   );
-                  this.handleClose();
+                  this.handleModal();
                 } else {
                   this.setState({
                     show: true,
+                  });
+
+                  this.setState({
+                    response: response1,
                   });
                   console.log(
                     "user of pustaka but not the user of pustaka intake"
@@ -204,7 +286,10 @@ class FormPage extends Component {
                 </div>
               </Modal.Body>
 
-              <Button variant="secondary" onClick={this.handleClose}>
+              <Button
+                variant="secondary"
+                onClick={this.handleModal.bind(this.state.response)}
+              >
                 Continue as {localStorage.getItem("username")}
               </Button>
               <div style={{ textAlign: "center", marginTop: 60 }}>
