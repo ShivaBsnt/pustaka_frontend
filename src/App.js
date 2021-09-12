@@ -45,13 +45,10 @@ function App() {
           <NavbarPage></NavbarPage>
           <Route exact path="/">
             <Body></Body>
-
             {/* <CustomSelect></CustomSelect> */}
           </Route>
-
           <Footer></Footer>
         </Route>
-
         <Route exact path="/bestseller" component={BestSellerFullPage} />
         <Route exact path="/newarrival" component={NewArrivalFullPage} />
         {/* <Route exact path="/login" component={Login} /> */}
